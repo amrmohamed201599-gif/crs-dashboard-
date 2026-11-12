@@ -69,6 +69,27 @@ dialog{background:var(--dlg);color:var(--tx);border:1px solid var(--bd);border-r
 dialog::backdrop{background:rgba(0,0,0,.6)}dialog input[type=text]{width:100%;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px;margin:10px 0}
 dialog ol{padding-left:18px;color:var(--mut);font-size:13px}dialog li{margin:4px 0}
 @media(max-width:800px){.hero,.two{grid-template-columns:1fr}.row4{grid-template-columns:repeat(2,1fr)}header,.bar,main{padding-left:12px;padding-right:12px}}
+body{font-variant-numeric:tabular-nums}
+[data-theme=light] .ring .fg{filter:none}
+.k .v{letter-spacing:-.5px}
+.kpis .card:last-child{display:flex;flex-direction:column;justify-content:center}
+.sumrow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;text-align:center}
+.sum .k .v{font-size:32px}
+.lb{display:flex;flex-direction:column}
+.lbh,.lbr{display:grid;grid-template-columns:28px minmax(110px,170px) 1fr minmax(130px,260px);column-gap:16px;align-items:center}
+.lbh{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:1px;padding:0 0 10px;border-bottom:1px solid var(--bd)}
+.lbr{padding:11px 0;border-bottom:1px solid var(--bd);animation:rise .5s both}.lbr:last-child{border-bottom:0}
+.rk{width:26px;height:26px;border-radius:8px;background:var(--soft);display:grid;place-items:center;font-size:12px;font-weight:700;color:var(--mut)}
+.lbr:nth-child(-n+4) .rk{background:var(--a);color:#fff}
+.lbr .nm{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seg,.its{display:flex;align-items:center;gap:10px}
+.trk{flex:1;height:12px;border-radius:7px;background:var(--soft);display:flex;overflow:hidden}
+.trk i{display:block;height:100%;transform-origin:left;animation:growx .9s both}
+@keyframes growx{from{transform:scaleX(0)}}
+.seg b,.its b{min-width:48px;text-align:right;font-weight:700}
+.bk{grid-column:3;display:flex;flex-wrap:wrap;gap:3px 14px;margin-top:5px}
+.bk u{display:inline-block;width:8px;height:8px;border-radius:3px;margin-right:5px}
+@media(max-width:800px){.sumrow{grid-template-columns:repeat(2,1fr);row-gap:14px}.lbh{display:none}.lbr{grid-template-columns:26px 1fr;row-gap:7px}.lbr .seg,.lbr .its,.bk{grid-column:1/-1}.its::before{content:"Items";font-size:11px;color:var(--mut);width:34px}.person{grid-template-columns:100px 1fr}}
 body.tv header .btn.hide{display:none}
 </style></head><body>
 <div class="orb o1"></div><div class="orb o2"></div>
@@ -188,11 +209,17 @@ function chart(people,R){
    return `<rect x="${x}" y="${top+H-h}" width="${bw}" height="${h}" rx="3" fill="${q[2]}"><title>${p.n} – ${q[0]}: ${fmt(v)}</title></rect>${v?`<text x="${x+bw/2}" y="${top+H-h-4}" font-size="11" style="fill:var(--tx)" text-anchor="middle">${fmt(v)}</text>`:''}`}).join('')+
   `<text transform="translate(${L+i*gw+gw/2+8},${top+H+14}) rotate(-35)" font-size="11" style="fill:var(--mut)" text-anchor="end">${p.n}</text>`}).join('');
  return `<div style="overflow-x:auto"><svg width="${W}" height="${top+H+bot}">${g}</svg></div><div class="sub" style="margin-top:6px">${ser.map(q=>`<span style="color:${q[2]}">■</span> ${q[0]}`).join(' &nbsp; ')}</div>`}
+function board(people,R){
+ if(!people.length)return'<div class="sub">No activity for the selected filters</div>';
+ const ser=[['CRS','ur','#5b8cff'],...(R.noCU?[]:[['Update','uu','#ffb84d'],['Clarification','ucl','#a45bff']])];
+ const mx=Math.max(1,...people.map(p=>p.tot)),mi=Math.max(1,...people.map(p=>p.it));
+ const rows=people.map((p,i)=>`<div class="lbr" style="animation-delay:${Math.min(i,12)*.04}s"><span class="rk">${i+1}</span><span class="nm" title="${p.n}">${p.n}</span><div class="seg"><div class="trk">${ser.map(q=>p[q[1]]?`<i style="width:${p[q[1]]/mx*100}%;background:${q[2]}" title="${q[0]}: ${fmt(p[q[1]])}"></i>`:'').join('')}</div><b>${fmt(p.tot)}</b></div><div class="its"><div class="trk"><i style="width:${p.it/mi*100}%;background:#2ee6a6"></i></div><b>${fmt(p.it)}</b></div><div class="sub bk">${ser.map(q=>`<span><u style="background:${q[2]}"></u>${fmt(p[q[1]])} ${q[0]}</span>`).join('')}</div></div>`).join('');
+ return `<div class="lb"><div class="lbh"><span></span><span>Team member</span><span>Released: ${ser.map(q=>q[0]).join(' · ')}</span><span>Items</span></div>${rows}</div>`}
 function agg(key){
- const R=REG[key],T={},P={};for(const k in R.c)T[k]=0;
+ const R=REG[key],T={},P={},KS=['rc','ur','it','rcl','ucl','ru','uu','kc','kcl','ku'];KS.forEach(k=>T[k]=0);
  for(const r of DATA[R.sheet].rows){
   const inR=ok(r.d),g=k=>r.v[R.c[k]]||0;
-  if(!inR)continue;for(const k in R.c)T[k]+=g(k);
+  if(!inR)continue;for(const k of KS)T[k]+=g(k);
   if(!/^rec/i.test(r.n)){const p=P[r.n]||(P[r.n]={ur:0,uu:0,ucl:0,it:0});p.ur+=g('ur');p.uu+=g('uu');p.ucl+=g('ucl');p.it+=g('it')}}
  T.pc=T.rc+T.kc;T.rm=T.pc-T.ur;T.pcl=T.rcl+T.kcl;T.rml=T.pcl-T.ucl;T.pu=T.ru+T.ku;T.rmu=T.pu-T.uu;T.pct=T.pc>0?Math.min(1,T.ur/T.pc):0;
 
@@ -220,14 +247,15 @@ function render(keep){
  const col=S.tab==='Overview'?'#5b8cff':REG[S.tab].col;document.documentElement.style.setProperty('--a',col);
  let h='';
  if(S.tab==='Overview'){
-  h=`<div class="grid ov">${keys.map((k,i)=>{const {T}=agg(k);return `<div class="card ovc" style="--a:${REG[k].col};animation-delay:${i*.08}s" onclick="S.tab='${k}';render()"><h2>${k}</h2>${ring(T.pct,150,1)}<div class="row4" style="grid-template-columns:repeat(3,1fr)"><div class="k"><div class="v">${N(T.rc)}</div><div class="l">Received</div></div><div class="k rel"><div class="v">${N(T.ur)}</div><div class="l">Released</div></div><div class="k rem"><div class="v">${N(T.rm)}</div><div class="l">Remaining</div></div></div></div>`}).join('')}</div>`
+  const A=keys.map(k=>agg(k).T),tot=A.reduce((a,T)=>({rc:a.rc+T.rc,ur:a.ur+T.ur,rm:a.rm+T.rm,it:a.it+T.it,pc:a.pc+T.pc}),{rc:0,ur:0,rm:0,it:0,pc:0}),tp=tot.pc>0?Math.min(1,tot.ur/tot.pc):0;
+  h=`<div class="grid"><div class="card sum"><h2>All regions · overall</h2><div class="sumrow"><div class="k"><div class="v">${N(tot.rc)}</div><div class="l">Received</div></div><div class="k rel"><div class="v">${N(tot.ur)}</div><div class="l">Released</div></div><div class="k rem"><div class="v">${N(tot.rm)}</div><div class="l">Remaining</div></div><div class="k"><div class="v" style="color:var(--ok)">${N(tot.it)}</div><div class="l">Items processed</div></div><div class="k"><div class="v">${Math.round(tp*100)}%</div><div class="l">Completed</div></div></div><div class="prog"><i style="width:${tp*100}%"></i></div></div><div class="grid ov">${keys.map((k,i)=>{const {T}=agg(k);return `<div class="card ovc" style="--a:${REG[k].col};animation-delay:${i*.08}s" onclick="S.tab='${k}';render()"><h2>${k}</h2>${ring(T.pct,150,1)}<div class="row4" style="grid-template-columns:repeat(3,1fr)"><div class="k"><div class="v">${N(T.rc)}</div><div class="l">Received</div></div><div class="k rel"><div class="v">${N(T.ur)}</div><div class="l">Released</div></div><div class="k rem"><div class="v">${N(T.rm)}</div><div class="l">Remaining</div></div></div></div>`}).join('')}</div></div>`
  }else{
   const k=S.tab,R=REG[k],{T,people}=agg(k),od=orders(k),mx=Math.max(1,...people.map(p=>p.tot));
   h=`<div class="grid"><div class="grid hero"><div class="card" style="display:grid;place-items:center"><h2>CRS Completion</h2>${ring(T.pct)}<div class="sub" style="margin-top:8px">${fmt(T.ur)} of ${fmt(T.pc)} released</div></div>
   <div class="grid kpis">${kpi('CRS',T.rc,T.pc,T.ur,T.rm)}${R.noCU?'':kpi('Clarification',T.rcl,T.pcl,T.ucl,T.rml)+kpi('Update',T.ru,T.pu,T.uu,T.rmu)}
   <div class="card"><h2>Items</h2><div class="k"><div class="v" style="font-size:44px">${N(T.it)}</div><div class="l">Items processed</div></div></div></div></div>
   <div class="card"><h2>Orders Pipeline</h2><div class="pipe">${od.map(([l,v])=>`<div class="step"><div class="v">${N(v)}</div><div class="l">${l}</div></div>`).join('')}</div></div>
-  <div class="card"><h2>Performance by Team Member</h2>${chart(people,R)}</div></div>`}
+  <div class="card"><h2>Performance by Team Member</h2>${board(people,R)}</div></div>`}
  $('app').innerHTML=h;
  document.querySelectorAll('.n').forEach(el=>{const id=el.dataset.id,to=+el.dataset.v,from=PREV[id]??0;PREV[id]=to;const t0=performance.now();
   (function step(t){const p=Math.min(1,(t-t0)/900);el.textContent=fmt(from+(to-from)*(1-Math.pow(1-p,3)));if(p<1)requestAnimationFrame(step)})(t0)})}
